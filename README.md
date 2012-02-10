@@ -1,4 +1,3 @@
-
 Minify module for Centurion Framework (http://www.centurion-project.org)
 
 # Description
@@ -13,10 +12,9 @@ This module is used to minify the HTML output, and combiny the css and js in one
 - Add this config :
 
 
-    minify.html = true
-    minify.js = true
-    minify.salt = pingpong
-
+    minify.html = true  
+    minify.js = true  
+    minify.salt = pingpong  
 
 # TODO
 
