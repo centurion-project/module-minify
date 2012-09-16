@@ -45,8 +45,13 @@ class Minify_View_Helper_HeadLink extends Zend_View_Helper_HeadLink
                 $ticketFileTable->insert(array('ticket_id' => $ticket->id, 'file_id' => $file->id, 'order' => $index));
             }
         }
-        
-        $this->prependStylesheet($this->view->url(array('key' => $key), 'minify_css', null, false, false));
+        $options = Centurion_Controller_Front::getInstance()->getParam('bootstrap')->getOptions();
+        if ($options['minify']['minify_css'] == 1) {
+            $this->prependStylesheet($this->view->url(array('key' => $key), 'minify_css', null, false, false));
+        }
+        elseif ($options['minify']['concat_css'] == 1) {
+            $this->prependStylesheet($this->view->url(array('key' => $key), 'concat_css', null, false, false));
+        }
         return parent::toString($indent);
     }
 }

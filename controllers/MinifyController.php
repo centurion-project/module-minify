@@ -15,22 +15,31 @@ class Minify_MinifyController extends Centurion_Controller_Action
     
     public function minifyCssAction()
     {
-        $this->minify('css');
+        $this->process('css', true);
     }
     
     public function minifyJsAction()
     {
-        $this->minify('js');
+        $this->process('js', true);
+    }
+    public function concatCssAction()
+    {
+        $this->process('css', false);
     }
     
-    protected function minify($type = 'js')
+    public function concatJsAction()
+    {
+        $this->process('js', false);
+    }
+    
+    protected function process ($type, $minify = false)
     {
         $this->initHelper();
         
         $this->_getParam('key');
         
         $ticket = Centurion_Db::getSingleton('minify/ticket')->findOneByKey($this->_getParam('key'));
-        
+
         if ($ticket === null) {
             throw new Centurion_Controller_Action_Exception('Invalid key', 404);
         }
@@ -42,7 +51,7 @@ class Minify_MinifyController extends Centurion_Controller_Action
         }
         
         $rowset = Centurion_Db::getSingleton('minify/ticketFile')->select(true)->where('ticket_id=?', $ticket->id)->order('order asc')->fetchAll();
-        
+        $output = '';
         foreach ($rowset as $ticketFile) {
             $file = $ticketFile->file;
             $cache = new Centurion_Cache_Frontend_File(array(
@@ -51,20 +60,29 @@ class Minify_MinifyController extends Centurion_Controller_Action
             $cache->setBackend($this->_getCache('core')->getBackend());
             
             $id = md5($file->file);
-
-            if (!($minified = $cache->load($id))) {
+            if (!($output = $cache->load($id))) {
                 if ($type == 'js') {
-                    $minified = Minify_Model_JSMin::minify(file_get_contents(APPLICATION_PATH . '/../public/' . $file->file));
+                    if ($minify) {
+                        $output = Minify_Model_JSMin::minify(file_get_contents(APPLICATION_PATH . '/../public/' . $file->file));
+                    }
+                    else {
+                        $output = file_get_contents(APPLICATION_PATH . '/../public/' . $file->file);
+                    }
                 } else {
                     $path = $file->file;
                     $tab = explode('/', $path);
                     array_pop($tab);
                     
-                    $minified = Minify_Model_CSS::minify(file_get_contents(APPLICATION_PATH . '/../public/' . $file->file), array('prependRelativePath' => implode('/', $tab) . '/'));
+                    if ($minify) {
+                        $output = Minify_Model_CSS::minify(file_get_contents(APPLICATION_PATH . '/../public/' . $file->file), array('prependRelativePath' => implode('/', $tab) . '/'));
+                    }
+                    else {
+                        $output = Minify_Model_CSS::concat(file_get_contents(APPLICATION_PATH . '/../public/' . $file->file), array('prependRelativePath' => implode('/', $tab) . '/'));
+                    }
                 }
-                $cache->save($minified, $id);
+                $cache->save($output, $id);
             }
-            $this->_response->appendBody($minified . PHP_EOL);
+            $this->_response->appendBody($output . PHP_EOL);
         }
         $this->_response->setHeader('Content-Type', $contentType);
     }
