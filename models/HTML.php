@@ -18,6 +18,13 @@
  */
 class Minify_Model_HTML {
 
+    private $_minifyHtml = false, 
+            $_minifyJs = false, 
+            $_minifyCss = false, 
+            $_concatJs = false, 
+            $_concatCss = false
+    ;
+    
     /**
      * "Minify" an HTML page
      *
@@ -72,6 +79,21 @@ class Minify_Model_HTML {
         if (isset($options['jsMinifier'])) {
             $this->_jsMinifier = $options['jsMinifier'];
         }
+        if (isset($options['minifyHtml'])) {
+            $this->_minifyHtml = $options['minifyHtml'];
+        }
+        if (isset($options['minifyJs'])) {
+            $this->_minifyJs = $options['minifyJs'];
+        }
+        if (isset($options['minifyCss'])) {
+            $this->_minifyCss = $options['minifyCss'];
+        }
+        if (isset($options['concatJs'])) {
+            $this->_concatJs = $options['concatJs'];
+        }
+        if (isset($options['concatCss'])) {
+            $this->_concatCss = $options['concatCss'];
+        }
     }
     
     
@@ -89,55 +111,61 @@ class Minify_Model_HTML {
         $this->_replacementHash = 'MINIFYHTML' . md5($_SERVER['REQUEST_TIME']);
         $this->_placeholders = array();
         
-        // replace SCRIPTs (and minify) with placeholders
-        $this->_html = preg_replace_callback(
-            '/(\\s*)(<script\\b[^>]*?>)([\\s\\S]*?)<\\/script>(\\s*)/i'
-            ,array($this, '_removeScriptCB')
-            ,$this->_html);
+        if ($this->_concatJs or $this->_minifyJs ) {
+            // replace SCRIPTs (and minify) with placeholders
+            $this->_html = preg_replace_callback(
+                '/(\\s*)(<script\\b[^>]*?>)([\\s\\S]*?)<\\/script>(\\s*)/i'
+                ,array($this, '_removeScriptCB')
+                ,$this->_html);
+        }
         
-        // replace STYLEs (and minify) with placeholders
-        $this->_html = preg_replace_callback(
-            '/\\s*(<style\\b[^>]*?>)([\\s\\S]*?)<\\/style>\\s*/i'
-            ,array($this, '_removeStyleCB')
-            ,$this->_html);
-        
-        // remove HTML comments (not containing IE conditional comments).
-        $this->_html = preg_replace_callback(
-            '/<!--([\\s\\S]*?)-->/'
-            ,array($this, '_commentCB')
-            ,$this->_html);
-        
-        // replace PREs with placeholders
-        $this->_html = preg_replace_callback('/\\s*(<pre\\b[^>]*?>[\\s\\S]*?<\\/pre>)\\s*/i'
-            ,array($this, '_removePreCB')
-            ,$this->_html);
-        
-        // replace TEXTAREAs with placeholders
-        $this->_html = preg_replace_callback(
-            '/\\s*(<textarea\\b[^>]*?>[\\s\\S]*?<\\/textarea>)\\s*/i'
-            ,array($this, '_removeTextareaCB')
-            ,$this->_html);
-        
-        // trim each line.
-        // @todo take into account attribute values that span multiple lines.
-        $this->_html = preg_replace('/^\\s+|\\s+$/m', '', $this->_html);
-        
-        // remove ws around block/undisplayed elements
-        $this->_html = preg_replace('/\\s+(<\\/?(?:area|base(?:font)?|blockquote|body'
-            .'|caption|center|cite|col(?:group)?|dd|dir|div|dl|dt|fieldset|form'
-            .'|frame(?:set)?|h[1-6]|head|hr|html|legend|li|link|map|menu|meta'
-            .'|ol|opt(?:group|ion)|p|param|t(?:able|body|head|d|h||r|foot|itle)'
-            .'|ul)\\b[^>]*>)/i', '$1', $this->_html);
-        
-        // remove ws outside of all elements
-        $this->_html = preg_replace_callback(
-            '/>([^<]+)</'
-            ,array($this, '_outsideTagCB')
-            ,$this->_html);
-        
-        // use newlines before 1st attribute in open tags (to limit line lengths)
-        $this->_html = preg_replace('/(<[a-z\\-]+)\\s+([^>]+>)/i', "\n$1 $2", $this->_html);
-        
+        if ($this->_concatCss or $this->_minifyCss) {
+            // replace STYLEs (and minify) with placeholders
+            $this->_html = preg_replace_callback(
+                '/\\s*(<style\\b[^>]*?>)([\\s\\S]*?)<\\/style>\\s*/i'
+                ,array($this, '_removeStyleCB')
+                ,$this->_html);
+        }
+        if ($this->_minifyHtml) {
+            
+            // remove HTML comments (not containing IE conditional comments).
+            $this->_html = preg_replace_callback(
+                '/<!--([\\s\\S]*?)-->/'
+                ,array($this, '_commentCB')
+                ,$this->_html);
+
+            // replace PREs with placeholders
+            $this->_html = preg_replace_callback('/\\s*(<pre\\b[^>]*?>[\\s\\S]*?<\\/pre>)\\s*/i'
+                ,array($this, '_removePreCB')
+                ,$this->_html);
+
+            // replace TEXTAREAs with placeholders
+            $this->_html = preg_replace_callback(
+                '/\\s*(<textarea\\b[^>]*?>[\\s\\S]*?<\\/textarea>)\\s*/i'
+                ,array($this, '_removeTextareaCB')
+                ,$this->_html);
+
+            // trim each line.
+            // @todo take into account attribute values that span multiple lines.
+            $this->_html = preg_replace('/^\\s+|\\s+$/m', '', $this->_html);
+
+            // remove ws around block/undisplayed elements
+            $this->_html = preg_replace('/\\s+(<\\/?(?:area|base(?:font)?|blockquote|body'
+                .'|caption|center|cite|col(?:group)?|dd|dir|div|dl|dt|fieldset|form'
+                .'|frame(?:set)?|h[1-6]|head|hr|html|legend|li|link|map|menu|meta'
+                .'|ol|opt(?:group|ion)|p|param|t(?:able|body|head|d|h||r|foot|itle)'
+                .'|ul)\\b[^>]*>)/i', '$1', $this->_html);
+
+            // remove ws outside of all elements
+            $this->_html = preg_replace_callback(
+                '/>([^<]+)</'
+                ,array($this, '_outsideTagCB')
+                ,$this->_html);
+
+            // use newlines before 1st attribute in open tags (to limit line lengths)
+            $this->_html = preg_replace('/(<[a-z\\-]+)\\s+([^>]+>)/i', "\n$1 $2", $this->_html);
+
+        }
         // fill placeholders
         $this->_html = str_replace(
             array_keys($this->_placeholders)
