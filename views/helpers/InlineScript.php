@@ -1,6 +1,6 @@
 <?php
 
-class Minify_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
+class Minify_View_Helper_InlineScript extends Zend_View_Helper_InlineScript
 {
     public function toString($indent = null)
     {
@@ -48,7 +48,7 @@ class Minify_View_Helper_HeadScript extends Zend_View_Helper_HeadScript
                 $ticketFileTable->insert(array('ticket_id' => $ticket->id, 'file_id' => $file->id, 'order' => $index));
             }
         }
-        
+
         $options = Centurion_Controller_Front::getInstance()->getParam('bootstrap')->getOptions();
         if ($options['minify']['minify_js'] == 1) {
             $this->prependFile($this->view->url(array('key' => $key), 'minify_js', null, false, false));

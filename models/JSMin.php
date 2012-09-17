@@ -87,6 +87,17 @@ class Minify_Model_JSMin {
         $jsmin = new Minify_Model_JSMin($js);
         return $jsmin->min();
     }
+    
+    /**
+     * Minify Javascript
+     *
+     * @param string $js Javascript to be minified
+     * @return string
+     */
+    public static function concat($js)
+    {
+        return $js;
+    }
 
     /*
      * Don't create a JSMin instance, instead use the static function minify,
